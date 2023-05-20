@@ -15,18 +15,21 @@ std::mutex output;
 // Compare Hashes with expected or output
 void comparingHashes(std::map<Hashes, std::vector<file>> files) {
     std::vector<Hashes> all_hashes { Hashes::MD5, Hashes::CRC32, Hashes::SHA256 };
-    std::vector<unsigned char> string;
+    std::vector<std::future<std::string>> futures;
     ThreadPool thread_pool;
     std::string got_string;
     
     for (Hashes algorithm : all_hashes) {
         for (file current : files[algorithm]) {
-            thread_pool.addTask(task(current, algorithm));
+            futures.push_back(thread_pool.addTask(task(current, algorithm, std::promise<std::string>)));
         }
     }
-    std::vector<task> results = thread_pool.getResults();
-    std::cout << results.size() << std::endl;
-    for (task i : results) {
+
+    for (Hashes algorithm : all_hashes) {
+
+    }
+
+    for (auto &i : futures) {
         if (i.expected_hash == "") {
             std::cout << "File hash (" << algorithmToText(i.algorithm) << "): " << std::endl << i.got_hash << std::endl << std::endl;
             continue;

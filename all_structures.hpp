@@ -2,6 +2,7 @@
 #define ALL_STRUCTURES 1
 #include <string>
 #include <stdexcept>
+#include <future>
 
 enum class Hashes {
     MD5,
@@ -12,18 +13,20 @@ enum class Hashes {
 struct file {
     std::string filename;
     std::string expected_hash;
+    std::string got_hash;
 };
 
 struct task {
     std::string filename;
     std::string expected_hash;
     Hashes algorithm;
-    std::string got_hash;
+    std::promise<std::string> prom;
 
-    task(file some_file, Hashes got_algorithm) {
+    task(file some_file, Hashes got_algorithm, std::promise<std::string> smth) {
         filename = some_file.filename;
         expected_hash = some_file.expected_hash;
         algorithm = got_algorithm;
+        prom = smth;
     }
 };
 

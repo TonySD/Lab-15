@@ -15,10 +15,7 @@ class ThreadPool {
         unsigned int available_threads;
         std::vector<std::thread> threads;
         std::queue<task> task_queue;
-        std::vector<task> results;
-        std::mutex result_mutex;
         std::mutex queue_mutex;
-        
 
         void run() {
             while (!finished) {
@@ -30,11 +27,7 @@ class ThreadPool {
 
                     auto bytes = getBytesFromFile(workingTask.filename);
                     std::string result = HashFactory::hash(bytes.data(), bytes.size(), workingTask.algorithm);
-                    workingTask.got_hash = result;
-
-                    std::unique_lock<std::mutex> result_lock (result_mutex);
-                    results.push_back(workingTask);
-                    result_lock.unlock();
+                    workingTask.prom.set_value(result);
                 }
             }
         }
@@ -62,18 +55,10 @@ class ThreadPool {
                 }
             }
 
-            void addTask(task new_task) {
+            std::future<std::string> addTask(task new_task) {
                 queue_mutex.lock();
                 task_queue.push(new_task);
                 queue_mutex.unlock();
-            }
-
-            std::vector<task> getResults() {
-                while (!task_queue.empty()) {}
-                finished = true;
-                for (auto &i : threads) {
-                    i.join();
-                }
-                return results;
+                return new_task.prom.get_future();
             }
 };
