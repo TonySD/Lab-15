@@ -20,13 +20,11 @@ struct task {
     std::string filename;
     std::string expected_hash;
     Hashes algorithm;
-    std::promise<std::string> prom;
 
-    task(file some_file, Hashes got_algorithm, std::promise<std::string> smth) {
+    task(file some_file, Hashes got_algorithm) {
         filename = some_file.filename;
         expected_hash = some_file.expected_hash;
         algorithm = got_algorithm;
-        prom = smth;
     }
 };
 

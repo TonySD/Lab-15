@@ -16,6 +16,7 @@ class ThreadPool {
         std::vector<std::thread> threads;
         std::queue<task> task_queue;
         std::mutex queue_mutex;
+        std::mutex output_mutex;
 
         void run() {
             while (!finished) {
@@ -27,7 +28,19 @@ class ThreadPool {
 
                     auto bytes = getBytesFromFile(workingTask.filename);
                     std::string result = HashFactory::hash(bytes.data(), bytes.size(), workingTask.algorithm);
-                    workingTask.prom.set_value(result);
+
+                    output_mutex.lock();
+                    if (workingTask.expected_hash == "") {
+                        std::cout << "File " << workingTask.filename << " hash (" << algorithmToText(workingTask.algorithm) << "): " << std::endl;
+                        std::cout << result << std::endl << std::endl;
+                    } else if (workingTask.expected_hash == result) {
+                        std::cout << "File " << workingTask.filename << " is complete! (" << algorithmToText(workingTask.algorithm) << ")" << std::endl << std::endl;
+                    } else {
+                        std::cout << "File " << workingTask.filename << " is corrupted! (" << algorithmToText(workingTask.algorithm) << ")" << std::endl;
+                        std::cout << "Expected hash: " << workingTask.expected_hash << std::endl;
+                        std::cout << "Got hash: " << result << std::endl << std::endl;
+                    }
+                    output_mutex.unlock();
                 }
             }
         }
@@ -49,16 +62,16 @@ class ThreadPool {
             ThreadPool(const ThreadPool &) = delete;
             ThreadPool(ThreadPool &&) = delete;
             ~ThreadPool() {
+                while (!task_queue.empty()) {}
                 finished = true;
                 for (auto& i : threads) {
                     i.join();
                 }
             }
 
-            std::future<std::string> addTask(task new_task) {
+            void addTask(task new_task) {
                 queue_mutex.lock();
                 task_queue.push(new_task);
                 queue_mutex.unlock();
-                return new_task.prom.get_future();
             }
 };

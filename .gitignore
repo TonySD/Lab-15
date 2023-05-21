@@ -1,2 +1,6 @@
 a.out
 .vscode/*
+report/*
+!report/report.tex
+!report/report.pdf
+lab-15.tar.gz
